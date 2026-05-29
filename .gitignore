@@ -1,0 +1,27 @@
+# --- secrets / 機密：永遠不要 commit ---
+.env
+*.env
+!config.example.env
+*.token
+*.secret
+credentials*.json
+client_secret*.json
+rclone.conf
+.notion_token
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# --- python ---
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- runtime output ---
+*.log
+/out/
