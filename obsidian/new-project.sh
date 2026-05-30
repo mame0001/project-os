@@ -16,14 +16,17 @@ VAULT_NAME="${VAULT_NAME:-MyVault}"
 TEMPLATE="$HERE/templates/project-dashboard.template.md"
 
 render(){
-  # $1 dest file, env: PROJECT_NAME REL_PATH NOTION_URL DRIVE_URL VAULT_NAME
-  sed -e "s|{{PROJECT_NAME}}|${PROJECT_NAME}|g" \
-      -e "s|{{VAULT_NAME}}|${VAULT_NAME}|g" \
-      -e "s|{{REL_PATH}}|${REL_PATH}|g" \
-      -e "s|{{NOTION_URL}}|${NOTION_URL}|g" \
-      -e "s|{{DRIVE_URL}}|${DRIVE_URL}|g" \
-      -e "s|{{DATE}}|$(date +%F)|g" \
-      "$TEMPLATE" > "$1"
+  # $1 dest file, env: PROJECT_NAME REL_PATH NOTION_URL DRIVE_URL VAULT_NAME DATE
+  # 使用 envsubst 替換（避免 sed 分隔符注入 / safe against | injection in project names）
+  # 模板用 ${PROJECT_NAME} 等 shell 變數語法
+  DATE="$(date +%F)" \
+  PROJECT_NAME="$PROJECT_NAME" \
+  VAULT_NAME="$VAULT_NAME" \
+  REL_PATH="$REL_PATH" \
+  NOTION_URL="$NOTION_URL" \
+  DRIVE_URL="$DRIVE_URL" \
+  envsubst '${PROJECT_NAME} ${VAULT_NAME} ${REL_PATH} ${NOTION_URL} ${DRIVE_URL} ${DATE}' \
+    < "$TEMPLATE" > "$1"
 }
 
 # 由 scaffold 內部呼叫（已備好 env + 目錄）
@@ -36,6 +39,13 @@ fi
 
 # 一般 CLI 用法
 PROJECT_NAME="${1:?請給專案名稱，例如：專案-客戶-主題 / project name required}"
+
+# ── L-2 guard：拒絕包含 / 或 .. 的專案名（防路徑穿越 / path traversal guard） ──
+if [[ "$PROJECT_NAME" == *"/"* || "$PROJECT_NAME" == *".."* ]]; then
+  echo "❌ 專案名稱不可含 '/' 或 '..' / project name must not contain '/' or '..'" >&2
+  exit 1
+fi
+
 NOTION_URL="(待填 / TBD)"; DRIVE_URL="(待填 / TBD)"
 shift || true
 while [[ $# -gt 0 ]]; do
